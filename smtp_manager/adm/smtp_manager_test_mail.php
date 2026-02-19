@@ -21,8 +21,11 @@ $test_recipient = isset($_POST['test_recipient']) ? trim($_POST['test_recipient'
 $error_message = '';
 
 if (smtp_manager_send_test_mail($test_recipient, $error_message)) {
-    goto_url(G5_ADMIN_URL . '/smtp_manager_config.php?test_success=1&msg=' . urlencode('테스트 메일 발송에 성공했습니다.'));
+    set_session('ss_smtp_msg', '테스트 메일 발송에 성공했습니다.');
+    set_session('ss_smtp_test_success', 1);
 } else {
     $msg = $error_message ? $error_message : '테스트 메일 발송에 실패했습니다.';
-    goto_url(G5_ADMIN_URL . '/smtp_manager_config.php?test_success=0&msg=' . urlencode($msg));
+    set_session('ss_smtp_msg', $msg);
+    set_session('ss_smtp_test_success', 0);
 }
+goto_url(G5_ADMIN_URL . '/smtp_manager_config.php');

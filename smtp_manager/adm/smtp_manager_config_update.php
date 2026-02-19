@@ -53,4 +53,6 @@ if (!$updated) {
     alert('SMTP 관련 필드가 없습니다. 먼저 install.php를 실행해 주세요.');
 }
 
-goto_url(G5_ADMIN_URL . '/smtp_manager_config.php?msg=' . urlencode('SMTP 설정이 저장되었습니다.'));
+set_session('ss_smtp_msg', 'SMTP 설정이 저장되었습니다.');
+set_session('ss_smtp_test_success', -1);
+goto_url(G5_ADMIN_URL . '/smtp_manager_config.php');

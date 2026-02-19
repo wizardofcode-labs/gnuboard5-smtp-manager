@@ -10,8 +10,10 @@ if ($is_admin != 'super') {
     alert('최고관리자만 접근 가능합니다.');
 }
 
-$message = isset($_GET['msg']) ? strip_tags($_GET['msg']) : '';
-$test_success = isset($_GET['test_success']) ? (int)$_GET['test_success'] : -1;
+$message = (string)get_session('ss_smtp_msg');
+$test_success = ($message !== '') ? (int)get_session('ss_smtp_test_success') : -1;
+set_session('ss_smtp_msg', '');
+set_session('ss_smtp_test_success', '');
 
 $smtp = smtp_manager_get_config();
 
@@ -29,9 +31,23 @@ include_once(G5_ADMIN_PATH . '/admin.head.php');
     </p>
 </div>
 
-<?php if ($message) { ?>
-<div class="<?php echo ($test_success === 1 || ($test_success === -1 && strpos($message, '저장') !== false)) ? 'local_desc01' : 'local_desc02'; ?> local_desc">
-    <p><?php echo get_sanitize_input($message); ?></p>
+<?php if ($message) {
+    if ($test_success === 1) {
+        // 테스트 메일 성공 → 초록
+        $msg_style = 'background:#edfaf1; border-left:4px solid #28a745; color:#155724;';
+        $msg_icon  = '✓ ';
+    } elseif ($test_success === 0) {
+        // 테스트 메일 실패 → 빨강
+        $msg_style = 'background:#fff2f2; border-left:4px solid #dc3545; color:#721c24;';
+        $msg_icon  = '✗ ';
+    } else {
+        // 설정 저장 완료 → 파랑
+        $msg_style = 'background:#e8f4fd; border-left:4px solid #0d6efd; color:#0a3d6b;';
+        $msg_icon  = '✓ ';
+    }
+    ?>
+<div class="local_desc" style="<?php echo $msg_style; ?> padding:12px 16px; margin-bottom:16px; border-radius:0 4px 4px 0;">
+    <p style="margin:0; font-weight:600;"><?php echo $msg_icon . get_sanitize_input($message); ?></p>
 </div>
 <?php } ?>
 
