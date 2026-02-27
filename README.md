@@ -4,7 +4,7 @@
 
 **제작사:** K3SOFT
 **회사명:** WizardOfCode
-**버전:** v1.0.0
+**버전:** v1.1.0
 **최소 요구 버전:** 그누보드5 5.5.x 이상 / 영카트5 호환
 
 ---
@@ -39,6 +39,7 @@ smtp_manager/
 │       ├── install.php                         ← 설치 페이지 (DB 스키마 생성)
 │       ├── admin/
 │       │   └── smtp_log.php                    ← 메일 발송 로그 관리 페이지
+│       │   └── smtp_log_delete.php             ← 메일 발송 로그 삭제 페이지
 │       └── lib/
 │           └── smtp.lib.php                    ← 핵심 라이브러리
 └── adm/
@@ -234,4 +235,9 @@ Copyright (c) 2026 K3SOFT / WizardOfCode
 
 ---
 
-*SMTP Manager for Gnuboard5 v1.0.0 — WizardOfCode*
+## History
+
+- v1.1.0 — 로그 선택 삭제 기능 추가
+  - 관리자 > 메일 발송 로그에서 체크박스로 다중 선택 후 삭제 가능
+
+*SMTP Manager for Gnuboard5 v1.1.0 — WizardOfCode*
