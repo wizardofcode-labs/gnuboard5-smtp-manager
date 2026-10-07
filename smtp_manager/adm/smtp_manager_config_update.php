@@ -38,16 +38,21 @@ if ($smtp_from_email && !filter_var($smtp_from_email, FILTER_VALIDATE_EMAIL)) {
     alert('발신자 이메일 형식이 올바르지 않습니다.');
 }
 
-$updated = smtp_manager_update_config(array(
+$settings = array(
     'smtp_use' => $smtp_use,
     'smtp_host' => $smtp_host,
     'smtp_port' => $smtp_port,
     'smtp_secure' => $smtp_secure,
     'smtp_user' => $smtp_user,
-    'smtp_pass' => $smtp_pass,
     'smtp_from_name' => $smtp_from_name,
     'smtp_from_email' => $smtp_from_email
-));
+);
+
+// 빈 입력은 비밀번호 변경 요청이 아닙니다.
+if ($smtp_pass !== '') {
+    $settings['smtp_pass'] = $smtp_pass;
+}
+$updated = smtp_manager_update_config($settings);
 
 if (!$updated) {
     alert('SMTP 관련 필드가 없습니다. 먼저 install.php를 실행해 주세요.');

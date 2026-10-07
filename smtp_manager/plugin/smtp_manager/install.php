@@ -30,6 +30,10 @@ include_once(G5_ADMIN_PATH . '/admin.head.php');
             <col>
         </colgroup>
         <tbody>
+            <tr>
+                <th scope="row">버전</th>
+                <td>SMTP Manager v1.1.1</td>
+            </tr>
             <?php foreach ($result['messages'] as $message) { ?>
             <tr>
                 <th scope="row">처리</th>

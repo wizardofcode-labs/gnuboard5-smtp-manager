@@ -4,7 +4,7 @@
 
 **제작사:** K3SOFT
 **회사명:** WizardOfCode
-**버전:** v1.1.0
+**버전:** v1.1.1
 **최소 요구 버전:** 그누보드5 5.5.x 이상 / 영카트5 호환
 
 ---
@@ -65,6 +65,22 @@ smtp_manager/
 
 > **주의:** `extend/` 폴더에 이미 다른 `.extend.php` 파일이 있는 경우 덮어쓰지 마세요. `smtp.extend.php` 파일만 추가하면 됩니다.
 
+### 기존 설치의 v1.1.1 업데이트
+
+기존 파일을 백업한 뒤 배포본의 다음 파일을 사이트의 같은 경로에 덮어씁니다.
+배포본의 `smtp_manager/` 폴더 안에 있는 경로를 기준으로 복사합니다.
+
+- `adm/smtp_manager_config.php`
+- `adm/smtp_manager_config_update.php`
+- `plugin/smtp_manager/lib/smtp.lib.php`
+- `plugin/smtp_manager/admin/smtp_log.php`
+- `plugin/smtp_manager/install.php` (설치 화면 버전 표기)
+
+비밀번호 보호 수정이 함께 동작하도록 설정 화면·저장 처리·라이브러리 세 파일은 반드시 함께 교체하세요.
+`install.php` 재실행이나 DB 변경은 필요하지 않으며 기존 설정과 로그는 유지됩니다.
+업데이트 후 설정과 로그 화면을 새로고침하여 확인합니다.
+본문 조회 파일 `adm/smtp_manager_log_view.php`는 기존 경로에 있어야 합니다.
+
 ### 2단계 — 설치 페이지 실행
 
 브라우저에서 아래 URL로 접속하여 DB 테이블 및 컬럼을 생성합니다.
@@ -90,7 +106,7 @@ https://[사이트주소]/plugin/smtp_manager/install.php
 | 포트 | SMTP 포트 번호 |
 | 보안 방식 | `none` / `ssl` / `tls` 중 선택 |
 | 아이디 | SMTP 인증 계정 |
-| 비밀번호 | SMTP 인증 비밀번호 |
+| 비밀번호 | 변경할 때만 입력합니다. 빈칸으로 저장하면 기존 SMTP 인증 비밀번호가 유지됩니다. |
 | 발신자 이름 | 메일에 표시될 발신자 이름 |
 | 발신자 이메일 | 메일에 표시될 발신자 주소 |
 
@@ -219,7 +235,14 @@ ALTER TABLE `g5_config`
 
 ## History
 
+- v1.1.1 (2026-10-07)
+  - SMTP 설정 화면에서 저장된 비밀번호 노출 제거
+  - 비밀번호를 비워 두거나 입력 항목이 누락되어도 기존 비밀번호 유지
+  - 관리자 테마에 의존하지 않는 메일 본문 전용 팝업 적용
+  - 조회 오류·30초 시간 초과 표시 및 팝업 종료·연속 조회 시 이전 요청 취소
+  - 긴 메일의 본문만 스크롤하도록 분리하여 둥근 모서리와 헤더·닫기 버튼 유지
+
 - v1.1.0 — 로그 선택 삭제 기능 추가
   - 관리자 > 메일 발송 로그에서 체크박스로 다중 선택 후 삭제 가능
 
-*SMTP Manager for Gnuboard5 v1.1.0 — WizardOfCode*
+*SMTP Manager for Gnuboard5 v1.1.1 — WizardOfCode*

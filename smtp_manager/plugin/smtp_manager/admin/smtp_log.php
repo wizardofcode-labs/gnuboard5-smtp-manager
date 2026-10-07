@@ -95,7 +95,6 @@ include_once(G5_ADMIN_PATH . '/admin.head.php');
                         <td class="td_left">
                             <a href="#" class="smtp-log-subject"
                                data-id="<?php echo $log_id; ?>"
-                               data-subject="<?php echo htmlspecialchars($row['subject'], ENT_QUOTES, 'UTF-8'); ?>"
                                title="클릭하면 메일 본문을 확인할 수 있습니다"
                                style="text-decoration:underline; cursor:pointer;">
                                 <?php echo get_sanitize_input($row['subject']); ?>
@@ -125,7 +124,66 @@ include_once(G5_ADMIN_PATH . '/admin.head.php');
 </div>
 <?php } ?>
 
+<div id="smtp-mail-viewer" role="dialog" aria-modal="true" aria-labelledby="smtp-mail-viewer-title"
+     tabindex="-1" hidden>
+    <div id="smtp-mail-viewer-panel">
+        <div id="smtp-mail-viewer-header">
+            <h2 id="smtp-mail-viewer-title">메일 본문 보기</h2>
+            <button type="button" id="smtp-mail-viewer-close" aria-label="메일 본문 보기 닫기">닫기</button>
+        </div>
+        <div id="smtp-mail-viewer-body" aria-live="polite"></div>
+    </div>
+</div>
+
 <style>
+#smtp-mail-viewer[hidden] { display: none; }
+#smtp-mail-viewer {
+    position: fixed;
+    inset: 0;
+    z-index: 100000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    background: rgba(0, 0, 0, .5);
+}
+#smtp-mail-viewer-panel {
+    display: flex;
+    flex-direction: column;
+    width: 900px;
+    max-width: 100%;
+    max-height: calc(100vh - 32px);
+    overflow: hidden;
+    background: #fff;
+    color: #222;
+    border-radius: 6px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, .25);
+}
+#smtp-mail-viewer-header {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 16px 20px;
+    border-bottom: 1px solid #ddd;
+}
+#smtp-mail-viewer-title { margin: 0; font-size: 18px; }
+#smtp-mail-viewer-close {
+    padding: 6px 12px;
+    border: 1px solid #bbb;
+    border-radius: 4px;
+    background: #fff;
+    color: #222;
+    cursor: pointer;
+}
+#smtp-mail-viewer-body {
+    min-height: 0;
+    overflow: auto;
+    padding: 20px;
+    overflow-wrap: anywhere;
+}
+#smtp-mail-viewer-body .smtp-mail-viewer-error { color: #cc0000; padding: 20px 0; }
 #smtp-mail-viewer-iframe {
     width: 100%;
     min-height: 400px;
@@ -188,42 +246,98 @@ function delete_selected_logs() {
 
 <script>
 (function () {
-    var viewUrl = '<?php echo G5_ADMIN_URL; ?>/smtp_manager_log_view.php';
+    var viewUrl = <?php echo json_encode(G5_ADMIN_URL . '/smtp_manager_log_view.php', JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
+    var viewer = document.getElementById('smtp-mail-viewer');
+    var bodyEl = document.getElementById('smtp-mail-viewer-body');
+    var closeButton = document.getElementById('smtp-mail-viewer-close');
+    var activeRequest = null;
+    var returnFocus = null;
+    var previousOverflow = '';
+
+    function cancelRequest() {
+        if (activeRequest) {
+            var request = activeRequest;
+            activeRequest = null;
+            request.abort();
+        }
+    }
+
+    function closeViewer() {
+        cancelRequest();
+        viewer.hidden = true;
+        bodyEl.innerHTML = '';
+        document.body.style.overflow = previousOverflow;
+        if (returnFocus) returnFocus.focus();
+    }
+
+    function showError(message) {
+        bodyEl.innerHTML = '<p class="smtp-mail-viewer-error" role="alert">' + escapeHtml(message) + '</p>';
+    }
+
+    closeButton.addEventListener('click', closeViewer);
+    viewer.addEventListener('click', function (e) {
+        if (e.target === viewer) closeViewer();
+    });
+    function handleViewerKeydown(e) {
+        if (viewer.hidden) return;
+        if (e.key === 'Escape') {
+            e.preventDefault();
+            closeViewer();
+        } else if (e.key === 'Tab') {
+            // 본문 iframe과 닫기 버튼 사이에서 키보드 포커스를 유지합니다.
+            var iframe = document.getElementById('smtp-mail-viewer-iframe');
+            if (!iframe || (e.shiftKey && document.activeElement === closeButton)) {
+                e.preventDefault();
+                (iframe || closeButton).focus();
+            } else if (!e.shiftKey && document.activeElement === iframe) {
+                e.preventDefault();
+                closeButton.focus();
+            } else if (!viewer.contains(document.activeElement)) {
+                e.preventDefault();
+                closeButton.focus();
+            }
+        }
+    }
+    document.addEventListener('keydown', handleViewerKeydown);
 
     document.addEventListener('click', function (e) {
         var anchor = e.target.closest('.smtp-log-subject');
         if (!anchor) return;
         e.preventDefault();
 
-        var logId  = anchor.dataset.id;
-        var subject = anchor.dataset.subject;
+        cancelRequest();
+        returnFocus = anchor;
+        if (viewer.hidden) previousOverflow = document.body.style.overflow;
+        viewer.hidden = false;
+        document.body.style.overflow = 'hidden';
+        bodyEl.innerHTML = '<div id="smtp-mail-viewer-loading">불러오는 중...</div>';
+        closeButton.focus();
 
-        // 팝업 열고 로딩 표시
-        PopupManager.render(
-            '메일 본문 보기',
-            '<div id="smtp-mail-viewer-loading">불러오는 중...</div>',
-            ''
-        );
-
-        // AJAX 요청
         var xhr = new XMLHttpRequest();
-        xhr.open('GET', viewUrl + '?id=' + encodeURIComponent(logId), true);
+        activeRequest = xhr;
+        xhr.open('GET', viewUrl + '?id=' + encodeURIComponent(anchor.dataset.id), true);
         xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+        xhr.timeout = 30000;
         xhr.onload = function () {
-            if (xhr.status !== 200) {
-                document.getElementById('popupBody').innerHTML =
-                    '<p style="color:red;padding:20px;">불러오기에 실패했습니다. (HTTP ' + xhr.status + ')</p>';
-                return;
-            }
+            if (activeRequest !== xhr) return;
+            activeRequest = null;
             var data;
             try { data = JSON.parse(xhr.responseText); } catch (err) {
-                document.getElementById('popupBody').innerHTML =
-                    '<p style="color:red;padding:20px;">응답을 파싱할 수 없습니다.</p>';
+                showError(xhr.status === 200
+                    ? '응답을 파싱할 수 없습니다. 관리자 로그인 상태를 확인해 주세요.'
+                    : '불러오기에 실패했습니다. (HTTP ' + xhr.status + ')');
                 return;
             }
-            if (data.error) {
-                document.getElementById('popupBody').innerHTML =
-                    '<p style="color:red;padding:20px;">' + data.error + '</p>';
+            if (data && typeof data.error === 'string' && data.error) {
+                showError(data.error);
+                return;
+            }
+            if (xhr.status !== 200) {
+                showError('불러오기에 실패했습니다. (HTTP ' + xhr.status + ')');
+                return;
+            }
+            if (!data || typeof data !== 'object' || typeof data.content !== 'string') {
+                showError('올바른 메일 본문 응답이 아닙니다.');
                 return;
             }
 
@@ -240,31 +354,32 @@ function delete_selected_logs() {
                     '</div>' +
                 '</div>';
 
-            // 메일 본문은 iframe srcdoc으로 격리하여 렌더링
-            var iframeHtml =
-                '<iframe id="smtp-mail-viewer-iframe" srcdoc="" frameborder="0" ' +
-                'sandbox="allow-same-origin" scrolling="auto"></iframe>';
+            // 스크립트 실행을 허용하지 않는 iframe에 메일 본문을 격리합니다.
+            bodyEl.innerHTML = metaHtml +
+                '<iframe id="smtp-mail-viewer-iframe" title="메일 본문" srcdoc="" ' +
+                'sandbox="allow-same-origin"></iframe>';
 
-            var bodyEl = document.getElementById('popupBody');
-            bodyEl.innerHTML = metaHtml + iframeHtml;
-
-            // srcdoc 직접 할당 (XSS 격리)
             var iframe = document.getElementById('smtp-mail-viewer-iframe');
-            iframe.srcdoc = data.content || '<p style="color:#aaa;text-align:center;padding:30px;">본문 내용이 없습니다.</p>';
-
-            // iframe 높이 자동 조절
             iframe.addEventListener('load', function () {
                 try {
                     var body = iframe.contentDocument && iframe.contentDocument.body;
                     if (body) {
-                        iframe.style.height = Math.max(body.scrollHeight + 20, 200) + 'px';
+                        iframe.contentDocument.addEventListener('keydown', handleViewerKeydown);
+                        iframe.style.height = Math.max(body.scrollHeight + 20, 400) + 'px';
                     }
                 } catch (ex) { /* cross-origin 예외 무시 */ }
             });
+            iframe.srcdoc = data.content || '<p style="color:#aaa;text-align:center;padding:30px;">본문 내용이 없습니다.</p>';
         };
         xhr.onerror = function () {
-            document.getElementById('popupBody').innerHTML =
-                '<p style="color:red;padding:20px;">네트워크 오류가 발생했습니다.</p>';
+            if (activeRequest !== xhr) return;
+            activeRequest = null;
+            showError('네트워크 오류가 발생했습니다.');
+        };
+        xhr.ontimeout = function () {
+            if (activeRequest !== xhr) return;
+            activeRequest = null;
+            showError('요청 시간이 초과되었습니다. 다시 시도해 주세요.');
         };
         xhr.send();
     });

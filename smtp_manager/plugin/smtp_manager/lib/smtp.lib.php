@@ -156,9 +156,14 @@ if (!function_exists('smtp_manager_update_config')) {
                         smtp_port = '{$smtp_port}',
                         smtp_secure = '" . sql_escape_string($smtp_secure) . "',
                         smtp_user = '" . sql_escape_string($smtp_user) . "',
-                        smtp_pass = '" . sql_escape_string($smtp_pass) . "',
                         smtp_from_name = '" . sql_escape_string($smtp_from_name) . "',
                         smtp_from_email = '" . sql_escape_string($smtp_from_email) . "' ";
+
+        // 빈 입력 또는 누락된 비밀번호는 UPDATE 대상에서 제외합니다.
+        // 기존 값을 읽어 다시 쓰지 않아 DB의 비밀번호를 그대로 보존합니다.
+        if ($smtp_pass !== '') {
+            $sql .= ", smtp_pass = '" . sql_escape_string($smtp_pass) . "'";
+        }
 
         sql_query($sql, true);
 

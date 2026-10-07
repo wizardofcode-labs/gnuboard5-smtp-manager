@@ -94,7 +94,10 @@ include_once(G5_ADMIN_PATH . '/admin.head.php');
                 </tr>
                 <tr>
                     <th scope="row"><label for="smtp_pass">비밀번호</label></th>
-                    <td><input type="password" name="smtp_pass" id="smtp_pass" value="<?php echo get_sanitize_input($smtp['smtp_pass']); ?>" class="frm_input" size="60" autocomplete="new-password"></td>
+                    <td>
+                        <input type="password" name="smtp_pass" id="smtp_pass" value="" class="frm_input" size="60" autocomplete="new-password" aria-describedby="smtp_pass_help">
+                        <p id="smtp_pass_help" class="frm_info">비밀번호를 변경할 때만 입력하세요. 비워 두고 저장하면 기존 비밀번호가 유지됩니다.</p>
+                    </td>
                 </tr>
                 <tr>
                     <th scope="row"><label for="smtp_from_name">발신자 이름</label></th>
