@@ -1,5 +1,12 @@
 # SMTP Manager for Gnuboard5 / YoungCart
 
+## 공식 도움말
+
+- [SMTP Manager 도움말](https://docs.wizardofcode.kr/gnuboard5/smtp-manager/)
+- [설치하고 첫 메일 보내기](https://docs.wizardofcode.kr/gnuboard5/smtp-manager/getting-started)
+- [v1.1.1로 업데이트하기](https://docs.wizardofcode.kr/gnuboard5/smtp-manager/updating)
+
+
 > 그누보드5 / 영카트5 용 SMTP 메일 발송 플러그인
 
 **제작사:** K3SOFT
